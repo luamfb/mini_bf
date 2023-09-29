@@ -1,6 +1,8 @@
 ; vim: set ft=nasm:
 
-; refactor common code in IO and braces.
+; refactor code:
+;   - join common instructions IO and braces.
+;   - re-structure jumps in main loop
 
 BITS 32
 
@@ -33,18 +35,38 @@ main_loop:
     je quit
 
     cmp dl, '>'
-    je next_cell
+    jne .L1
+    inc esi
+.L1:
     cmp dl, '<'
-    je prev_cell
+    jne .L2
+    dec esi
+.L2:
     cmp dl, '+'
-    je incr_cell
+    jne .L3
+    inc byte [esi]
+.L3:
     cmp dl, '-'
-    je decr_cell
+    jne .L4
+    dec byte [esi]
+.L4:
     cmp dl, '.'
-    je output_cell
+    jne .L5
+    mov ebx, STDOUT
+    mov eax, SYS_WRITE
+    jmp .io_common
+.L5:
     cmp dl, ','
-    je input_cell
-
+    jne .L6
+    mov ebx, STDIN
+    mov eax, SYS_READ
+    ;jmp .io_common
+.io_common:
+    mov ecx, esi
+    mov edx, 1
+    int 0x80
+    jmp main_loop_end_iter
+.L6:
     mov ecx, 1 ; brace counter
 
     cmp dl, '['
@@ -56,38 +78,6 @@ main_loop:
 main_loop_end_iter:
     inc edi
     jmp main_loop
-
-next_cell:
-    inc esi
-    jmp main_loop_end_iter
-
-prev_cell:
-    dec esi
-    jmp main_loop_end_iter
-
-incr_cell:
-    inc byte [esi]
-    jmp main_loop_end_iter
-
-decr_cell:
-    dec byte [esi]
-    jmp main_loop_end_iter
-
-output_cell:
-    mov ebx, STDOUT
-    mov eax, SYS_WRITE
-    jmp io_common
-
-input_cell:
-    mov ebx, STDIN
-    mov eax, SYS_READ
-    ;jmp io_common
-
-io_common:
-    mov ecx, esi
-    mov edx, 1
-    int 0x80
-    jmp main_loop_end_iter
 
 go_forward_matching_brace:
     ; first and foremost, check the data pointer
