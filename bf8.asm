@@ -1,5 +1,6 @@
 ; vim: set ft=nasm:
 
+; remove multi-byte mov instructions (using xor, inc/dec, and one-byte mov operands)
 ; reposition some labels so all jumps become short.
 
 BITS 32
